@@ -8,7 +8,7 @@
 
 把照片/视频重命名为：
 
-`YYYYMMDD_HHMMSS_原文件名.ext`
+默认：`{ts}_{city}_{device}_{orig}.ext`
 
 时间来自文件内容里的拍摄/创建元数据（通过 `exiftool` 读取）。脚本支持幂等（可重复运行）并且会自动处理同名冲突（追加 `_2`、`_3` 等）。
 
@@ -50,6 +50,23 @@ brew install exiftool
 
 ```bash
 origin-time-renamer <路径1> <路径2>
+```
+
+指定命名模版（示例）：
+
+```bash
+origin-time-renamer --template "{ts}_{city}_{device}_{orig}" /path/to/media
+origin-time-renamer --template "{ts}_{city}_{orig}" /path/to/media
+origin-time-renamer --template "{ts}_{orig}" /path/to/media
+origin-time-renamer --template "{ts}_{city}_{device}" /path/to/media
+origin-time-renamer --template "{ts}" /path/to/media
+```
+
+交互式选择模版（选择 -> 预览 -> 确认执行；仅 apply 时会确认）：
+
+```bash
+origin-time-renamer --interactive-template /path/to/media
+origin-time-renamer --apply --interactive-template /path/to/media
 ```
 
 真正执行重命名：
@@ -118,6 +135,12 @@ origin-time-renamer --report ./rename_report.csv /path/to/media
 看 `reason` 列（例如 `inline_offset:...`、`offset_tag`、`utc_assumed;default_tz:...`）。
 
 如果文件元数据里已经带了 offset 但这个 offset 是错的，脚本会按元数据来（这是设计选择）。这种情况建议先用 `exiftool` 修正元数据，或者告诉我我可以加一个 `--force-tz` 覆盖模式。
+
+## 城市与设备字段
+
+- `{city}` 默认会基于 GPS 坐标离线推断最近城市（best-effort），可能与 Photos 显示略有差异；没有 GPS 时会省略。
+- `{device}` 会从元数据里的设备型号信息推断（例如 Make/Model），缺失时会省略。
+- `{city}` 的离线查询依赖 `reverse_geocoder`，它会在你安装本工具时自动安装（例如 `uv tool install .`）。如果只直接运行 wrapper 脚本且没有安装依赖，`{city}` 可能会被省略并给出 warning。
 
 ## 审计日志与回滚
 

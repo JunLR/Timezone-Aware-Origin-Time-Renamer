@@ -8,7 +8,7 @@ Script: `scripts/rename_by_origin_time.py`
 
 Rinomina i file in:
 
-`YYYYMMDD_HHMMSS_originalName.ext`
+Default: `{ts}_{city}_{device}_{orig}.ext`
 
 usando l'orario di origine dai metadati (via `exiftool`), con idempotenza e suffissi sicuri in caso di collisione.
 
@@ -50,6 +50,23 @@ Di default è un dry-run (mostra cosa farebbe, non rinomina).
 
 ```bash
 origin-time-renamer <path1> <path2>
+```
+
+Scegli un template di naming (esempi):
+
+```bash
+origin-time-renamer --template "{ts}_{city}_{device}_{orig}" /path/to/media
+origin-time-renamer --template "{ts}_{city}_{orig}" /path/to/media
+origin-time-renamer --template "{ts}_{orig}" /path/to/media
+origin-time-renamer --template "{ts}_{city}_{device}" /path/to/media
+origin-time-renamer --template "{ts}" /path/to/media
+```
+
+Selettore interattivo (scegli -> preview -> conferma apply):
+
+```bash
+origin-time-renamer --interactive-template /path/to/media
+origin-time-renamer --apply --interactive-template /path/to/media
 ```
 
 Applica le rinomine:
@@ -118,6 +135,12 @@ origin-time-renamer --report ./rename_report.csv /path/to/media
 Controlla la colonna `reason` (es. `inline_offset:...`, `offset_tag`, `utc_assumed;default_tz:...`).
 
 Se un file contiene un offset incorporato ma errato, lo strumento lo userà (per design). In tal caso correggi prima i metadati (via `exiftool`) oppure posso aggiungere una modalità `--force-tz`.
+
+## Campi Citta e Dispositivo
+
+- `{city}` deriva offline dalle coordinate GPS (nearest-city best-effort) ed e omesso se manca il GPS.
+- `{device}` deriva dai campi make/model ed e omesso se non disponibile.
+- La ricerca di `{city}` richiede la dipendenza `reverse_geocoder`, installata automaticamente quando installi questo tool (es. `uv tool install .`). Se esegui solo lo script wrapper senza dipendenze, `{city}` puo essere omesso con un warning.
 
 ## Log di Audit e Undo
 

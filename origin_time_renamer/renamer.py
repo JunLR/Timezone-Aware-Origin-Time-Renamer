@@ -60,7 +60,14 @@ TIME_TAGS_PRIORITY = [
     "CreateDate",
 ]
 
-PREFIX_RE = re.compile(r"^(\d{8}_\d{6})_(.+)$")
+TS_PREFIX_RE = re.compile(r"^(\d{8}_\d{6})(?:_|$)")
+ILLEGAL_FILENAME_CHARS_RE = re.compile(r'[\\/:"*?<>|]+')
+WS_RE = re.compile(r"\s+")
+MULTI_UNDERSCORE_RE = re.compile(r"_+")
+MULTI_DASH_RE = re.compile(r"-+")
+
+_CITY_CACHE: Dict[Tuple[float, float], str] = {}
+_REVERSE_GEOCODER_IMPORT_ERROR: Optional[str] = None
 
 
 @dataclass
@@ -197,6 +204,7 @@ def read_metadata(files: Sequence[str]) -> Dict[str, Dict[str, object]]:
         "exiftool",
         "-j",
         "-m",
+        "-n",
         "-SubSecDateTimeOriginal",
         "-DateTimeOriginal",
         "-CreationDate",
@@ -204,6 +212,14 @@ def read_metadata(files: Sequence[str]) -> Dict[str, Dict[str, object]]:
         "-CreateDate",
         "-OffsetTimeOriginal",
         "-OffsetTime",
+        "-GPSLatitude",
+        "-GPSLongitude",
+        "-City",
+        "-Location",
+        "-Country",
+        "-Make",
+        "-Model",
+        "-DeviceModelName",
     ]
 
     for batch in batch_iter(files, 400):
@@ -409,11 +425,102 @@ def resolve_datetime(
     return aware_dt, tz_source
 
 
-def is_already_prefixed(name: str) -> Optional[Tuple[str, str]]:
-    m = PREFIX_RE.match(name)
+def extract_existing_ts(stem: str) -> Optional[str]:
+    m = TS_PREFIX_RE.match(stem)
     if not m:
         return None
-    return m.group(1), m.group(2)
+    return m.group(1)
+
+
+def sanitize_component(text: str) -> str:
+    s = text.strip()
+    if not s:
+        return ""
+    s = WS_RE.sub("-", s)
+    s = ILLEGAL_FILENAME_CHARS_RE.sub("", s)
+    s = s.replace("_", "-")
+    s = MULTI_DASH_RE.sub("-", s)
+    return s.strip("-")
+
+
+def collapse_underscores(text: str) -> str:
+    s = MULTI_UNDERSCORE_RE.sub("_", text)
+    return s.strip("_")
+
+
+def template_uses(template: str, field: str) -> bool:
+    return "{" + field + "}" in template
+
+
+def build_device(meta: Dict[str, object]) -> str:
+    device_model_name = meta.get("DeviceModelName")
+    if isinstance(device_model_name, str) and device_model_name.strip():
+        return sanitize_component(device_model_name)
+
+    make = meta.get("Make")
+    model = meta.get("Model")
+    make_s = make.strip() if isinstance(make, str) else ""
+    model_s = model.strip() if isinstance(model, str) else ""
+
+    combo = "-".join([p for p in [make_s, model_s] if p])
+    return sanitize_component(combo)
+
+
+def build_city(meta: Dict[str, object]) -> str:
+    city = meta.get("City")
+    if isinstance(city, str) and city.strip():
+        return sanitize_component(city)
+    loc = meta.get("Location")
+    if isinstance(loc, str) and loc.strip():
+        return sanitize_component(loc)
+    return ""
+
+
+def reverse_geocode_city(lat: float, lon: float) -> str:
+    global _REVERSE_GEOCODER_IMPORT_ERROR  # noqa: PLW0603
+    key = (round(lat, 3), round(lon, 3))
+    if key in _CITY_CACHE:
+        return _CITY_CACHE[key]
+
+    if _REVERSE_GEOCODER_IMPORT_ERROR is not None:
+        return ""
+
+    try:
+        import reverse_geocoder as rg  # type: ignore
+    except Exception as exc:  # noqa: BLE001
+        _REVERSE_GEOCODER_IMPORT_ERROR = str(exc)
+        print(
+            "WARNING: reverse_geocoder is not available; {city} will be omitted. "
+            "Install dependencies (e.g. `uv tool install .`) to enable offline city lookup.",
+            file=sys.stderr,
+        )
+        return ""
+
+    try:
+        result = rg.search([(lat, lon)], mode=1)
+        name = ""
+        if result and isinstance(result, list) and isinstance(result[0], dict):
+            v = result[0].get("name")
+            if isinstance(v, str):
+                name = v
+        city = sanitize_component(name)
+    except Exception:  # noqa: BLE001
+        city = ""
+
+    _CITY_CACHE[key] = city
+    return city
+
+
+def build_stem_from_template(
+    template: str,
+    ts: str,
+    city: str,
+    device: str,
+    orig: str,
+) -> str:
+    formatted = template.format(ts=ts, city=city, device=device, orig=orig)
+    formatted = collapse_underscores(formatted)
+    return formatted
 
 
 def choose_available_target(target: Path) -> Path:
@@ -525,10 +632,9 @@ def rename_main(args: argparse.Namespace) -> int:
 
         ts = dt.strftime("%Y%m%d_%H%M%S")
 
-        prefixed = is_already_prefixed(p.name)
-        if prefixed is not None:
-            existing_ts, _ = prefixed
-            if existing_ts == ts:
+        existing_ts = extract_existing_ts(p.stem)
+        if existing_ts is not None:
+            if existing_ts == ts and (p.stem == ts or p.stem.startswith(ts + "_")):
                 status = "already_renamed"
                 actions.append(Action(status, path, path, "timestamp_prefix_matches"))
                 log_event(
@@ -567,7 +673,26 @@ def rename_main(args: argparse.Namespace) -> int:
             print(f"[{status}] {path} (computed {ts}, keeping existing prefix)")
             continue
 
-        desired_name = f"{ts}_{p.stem}{p.suffix}"
+        template = getattr(args, "template", "{ts}_{orig}")
+        orig = p.stem
+        device = build_device(meta) if template_uses(template, "device") else ""
+
+        city = ""
+        if template_uses(template, "city"):
+            lat = meta.get("GPSLatitude")
+            lon = meta.get("GPSLongitude")
+            if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
+                city = reverse_geocode_city(float(lat), float(lon))
+                if not city:
+                    city = build_city(meta)
+            else:
+                city = build_city(meta)
+
+        desired_stem = build_stem_from_template(template, ts=ts, city=city, device=device, orig=orig)
+        if not desired_stem:
+            desired_stem = f"{ts}_{orig}"
+
+        desired_name = f"{desired_stem}{p.suffix}"
         desired_target = p.with_name(desired_name)
 
         final_target = choose_available_target(desired_target)

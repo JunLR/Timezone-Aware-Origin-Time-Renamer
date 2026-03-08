@@ -8,7 +8,7 @@ Script: `scripts/rename_by_origin_time.py`
 
 Renames media to:
 
-`YYYYMMDD_HHMMSS_originalName.ext`
+Default: `{ts}_{city}_{device}_{orig}.ext`
 
 using origin metadata time from file content (via `exiftool`), with idempotency and collision-safe suffixes.
 
@@ -50,6 +50,23 @@ Default is dry-run preview (prints what would happen, does not rename).
 
 ```bash
 origin-time-renamer <path1> <path2>
+```
+
+Choose a naming template (examples):
+
+```bash
+origin-time-renamer --template "{ts}_{city}_{device}_{orig}" /path/to/media
+origin-time-renamer --template "{ts}_{city}_{orig}" /path/to/media
+origin-time-renamer --template "{ts}_{orig}" /path/to/media
+origin-time-renamer --template "{ts}_{city}_{device}" /path/to/media
+origin-time-renamer --template "{ts}" /path/to/media
+```
+
+Interactive template picker (choose -> preview -> confirm apply):
+
+```bash
+origin-time-renamer --interactive-template /path/to/media
+origin-time-renamer --apply --interactive-template /path/to/media
 ```
 
 Apply renames:
@@ -118,6 +135,12 @@ origin-time-renamer --report ./rename_report.csv /path/to/media
 Check the `reason` column (e.g. `inline_offset:...`, `offset_tag`, `utc_assumed;default_tz:...`).
 
 If a file already contains an embedded offset but it is wrong, this script will trust it (by design). In that case, fix the metadata first (via `exiftool`) or tell me and I can add a `--force-tz` mode.
+
+## City and Device Fields
+
+- `{city}` is derived offline from GPS coordinates (nearest-city best-effort). It may differ from Photos labeling and is omitted when GPS is missing.
+- `{device}` is derived from EXIF/QuickTime make/model fields and is omitted when unavailable.
+- `{city}` lookup requires the `reverse_geocoder` dependency, which is installed automatically when you install this tool (e.g. `uv tool install .`). If you run the wrapper script without installing dependencies, `{city}` may be omitted with a warning.
 
 ## Audit Log and Undo
 

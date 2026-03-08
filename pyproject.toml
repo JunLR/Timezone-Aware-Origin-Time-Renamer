@@ -8,11 +8,10 @@ version = "0.1.0"
 description = "Timezone-aware photo/video renamer using origin metadata timestamps"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = []
+dependencies = ["reverse_geocoder>=1.5"]
 
 [project.scripts]
 origin-time-renamer = "origin_time_renamer.cli:main"
 
 [tool.setuptools]
 packages = ["origin_time_renamer"]
-
