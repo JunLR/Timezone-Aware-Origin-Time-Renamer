@@ -15,6 +15,20 @@
 - Python 3.9+（使用 `zoneinfo`）
 - PATH 里可用的 `exiftool`
 
+## 安装（CLI）
+
+在仓库根目录执行：
+
+```bash
+python3 -m pip install -e .
+```
+
+然后可以直接运行：
+
+```bash
+origin-time-renamer --help
+```
+
 安装 exiftool（Homebrew）：
 
 ```bash
@@ -26,31 +40,31 @@ brew install exiftool
 默认是 dry run（演练/预览模式）：只打印“将会怎么改名”，不实际改文件名。
 
 ```bash
-python3 scripts/rename_by_origin_time.py <路径1> <路径2>
+origin-time-renamer <路径1> <路径2>
 ```
 
 真正执行重命名：
 
 ```bash
-python3 scripts/rename_by_origin_time.py --apply /path/to/media
+origin-time-renamer --apply /path/to/media
 ```
 
 输出 CSV 报告：
 
 ```bash
-python3 scripts/rename_by_origin_time.py --apply --report ./rename_report.csv /path/to/media
+origin-time-renamer --apply --report ./rename_report.csv /path/to/media
 ```
 
 设置兜底时区（默认 `Asia/Hong_Kong`）：
 
 ```bash
-python3 scripts/rename_by_origin_time.py --default-tz Asia/Hong_Kong /path/to/media
+origin-time-renamer --default-tz Asia/Hong_Kong /path/to/media
 ```
 
 每次运行统一指定时区（适合对某次旅行目录批量处理；目录里有新增文件时重复运行也只会处理新增未命名的）：
 
 ```bash
-python3 scripts/rename_by_origin_time.py \
+origin-time-renamer \
   --default-tz Europe/Paris \
   --apply /path/to/media
 ```
@@ -89,12 +103,28 @@ python3 scripts/rename_by_origin_time.py \
 想看每个文件到底用了哪个字段/时区来命名：
 
 ```bash
-python3 scripts/rename_by_origin_time.py --report ./rename_report.csv /path/to/media
+origin-time-renamer --report ./rename_report.csv /path/to/media
 ```
 
 看 `reason` 列（例如 `inline_offset:...`、`offset_tag`、`utc_assumed;default_tz:...`）。
 
 如果文件元数据里已经带了 offset 但这个 offset 是错的，脚本会按元数据来（这是设计选择）。这种情况建议先用 `exiftool` 修正元数据，或者告诉我我可以加一个 `--force-tz` 覆盖模式。
+
+## 审计日志与回滚
+
+当使用 `--apply` 执行重命名时，工具会写入 JSONL 审计日志。你可以用 `--log` 指定路径；否则会自动生成 `./rename_log_YYYYMMDD_HHMMSS.jsonl`，并在 summary 中打印路径。
+
+通过日志回滚（默认 dry-run）：
+
+```bash
+origin-time-renamer undo --log ./rename_log_YYYYMMDD_HHMMSS.jsonl
+```
+
+真正执行回滚：
+
+```bash
+origin-time-renamer undo --apply --log ./rename_log_YYYYMMDD_HHMMSS.jsonl
+```
 
 ## 支持的扩展名
 

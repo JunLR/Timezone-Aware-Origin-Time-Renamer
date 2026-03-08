@@ -17,6 +17,20 @@ using origin metadata time from file content (via `exiftool`), with idempotency 
 - Python 3.9+ (for `zoneinfo`)
 - `exiftool` in PATH
 
+## Install (CLI)
+
+From the repo root:
+
+```bash
+python3 -m pip install -e .
+```
+
+Then you can run:
+
+```bash
+origin-time-renamer --help
+```
+
 Install exiftool (Homebrew):
 
 ```bash
@@ -28,31 +42,31 @@ brew install exiftool
 Default is dry-run preview (prints what would happen, does not rename).
 
 ```bash
-python3 scripts/rename_by_origin_time.py <path1> <path2>
+origin-time-renamer <path1> <path2>
 ```
 
 Apply renames:
 
 ```bash
-python3 scripts/rename_by_origin_time.py --apply /path/to/media
+origin-time-renamer --apply /path/to/media
 ```
 
 Write report CSV:
 
 ```bash
-python3 scripts/rename_by_origin_time.py --apply --report ./rename_report.csv /path/to/media
+origin-time-renamer --apply --report ./rename_report.csv /path/to/media
 ```
 
 Set fallback timezone (default is `Asia/Hong_Kong`):
 
 ```bash
-python3 scripts/rename_by_origin_time.py --default-tz Asia/Hong_Kong /path/to/media
+origin-time-renamer --default-tz Asia/Hong_Kong /path/to/media
 ```
 
 Specify timezone for this run (useful for a new trip folder):
 
 ```bash
-python3 scripts/rename_by_origin_time.py \
+origin-time-renamer \
   --default-tz Europe/Paris \
   --apply /path/to/media
 ```
@@ -91,12 +105,28 @@ Common cases where you may want to specify a timezone per run:
 Inspect why a file used a specific timezone/time source:
 
 ```bash
-python3 scripts/rename_by_origin_time.py --report ./rename_report.csv /path/to/media
+origin-time-renamer --report ./rename_report.csv /path/to/media
 ```
 
 Check the `reason` column (e.g. `inline_offset:...`, `offset_tag`, `utc_assumed;default_tz:...`).
 
 If a file already contains an embedded offset but it is wrong, this script will trust it (by design). In that case, fix the metadata first (via `exiftool`) or tell me and I can add a `--force-tz` mode.
+
+## Audit Log and Undo
+
+When running with `--apply`, the tool writes a JSONL audit log. You can provide a path with `--log`; otherwise it creates `./rename_log_YYYYMMDD_HHMMSS.jsonl` and prints the path in the summary.
+
+Rollback from a log (dry-run by default):
+
+```bash
+origin-time-renamer undo --log ./rename_log_YYYYMMDD_HHMMSS.jsonl
+```
+
+Apply rollback:
+
+```bash
+origin-time-renamer undo --apply --log ./rename_log_YYYYMMDD_HHMMSS.jsonl
+```
 
 ## Supported Extensions
 
