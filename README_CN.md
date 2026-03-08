@@ -17,16 +17,29 @@
 
 ## 安装（CLI）
 
-在仓库根目录执行：
+推荐（uv）：
 
 ```bash
-python3 -m pip install -e .
+brew install uv
+uv tool install .
 ```
 
 然后可以直接运行：
 
 ```bash
 origin-time-renamer --help
+```
+
+开发者模式（editable 安装，改代码无需重装）：
+
+```bash
+uv tool install --editable .
+```
+
+如果你之前用 `pip install -e .` 安装过，建议先卸载以避免 PATH/命令冲突：
+
+```bash
+python3 -m pip uninstall origin-time-renamer
 ```
 
 安装 exiftool（Homebrew）：

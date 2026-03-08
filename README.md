@@ -19,16 +19,29 @@ using origin metadata time from file content (via `exiftool`), with idempotency 
 
 ## Install (CLI)
 
-From the repo root:
+Recommended (uv):
 
 ```bash
-python3 -m pip install -e .
+brew install uv
+uv tool install .
 ```
 
 Then you can run:
 
 ```bash
 origin-time-renamer --help
+```
+
+Developer workflow (editable install):
+
+```bash
+uv tool install --editable .
+```
+
+If you previously installed via `pip install -e .`, uninstall first to avoid PATH confusion:
+
+```bash
+python3 -m pip uninstall origin-time-renamer
 ```
 
 Install exiftool (Homebrew):
