@@ -83,6 +83,23 @@ Timezone selection:
 - Name collisions in the same folder append `_2`, `_3`, ... before extension.
 - Hidden files and unsupported extensions are ignored.
 
+### Override and Troubleshooting
+
+Common cases where you may want to specify a timezone per run:
+
+- Mixed sources with missing timezone (often exported/edited videos): use `--default-tz <IANA_TZ>` so UTC-only timestamps convert into the desired local time for naming.
+- You want one consistent timezone for a whole folder you just imported: run with `--default-tz ... --apply <folder>`; re-running later only renames newly added, un-renamed files.
+
+Inspect why a file used a specific timezone/time source:
+
+```bash
+python3 scripts/rename_by_origin_time.py --report ./rename_report.csv /path/to/media
+```
+
+Check the `reason` column (e.g. `inline_offset:...`, `offset_tag`, `utc_assumed;default_tz:...`).
+
+If a file already contains an embedded offset but it is wrong, this script will trust it (by design). In that case, fix the metadata first (via `exiftool`) or tell me and I can add a `--force-tz` mode.
+
 ### Supported Extensions
 
 `.heic .jpg .jpeg .png .dng .mov .mp4 .m4v .avi .mts .3gp` (case-insensitive)
@@ -173,6 +190,23 @@ python3 scripts/rename_by_origin_time.py \
 - 同一目录重复运行同一命令，只会影响新增且未按本规则命名的文件；已按规则命名的会被跳过。
 - 同目录下目标文件名冲突会自动加 `_2`、`_3` ……
 - 忽略隐藏文件和不支持的扩展名。
+
+### 覆盖与排查
+
+一些需要“每次运行统一指定时区”的常见场景：
+
+- 混合来源且部分文件没有时区信息（常见于导出/编辑后的视频）：用 `--default-tz <IANA_TZ>`，把按 UTC 解析到的时间转换成你希望的本地时间再命名。
+- 你希望某次导入的整个目录都用同一个时区：直接 `--default-tz ... --apply <目录>`；之后重复运行只会处理新增且未命名的文件。
+
+想看每个文件到底用了哪个字段/时区来命名：
+
+```bash
+python3 scripts/rename_by_origin_time.py --report ./rename_report.csv /path/to/media
+```
+
+看 `reason` 列（例如 `inline_offset:...`、`offset_tag`、`utc_assumed;default_tz:...`）。
+
+如果文件元数据里已经带了 offset 但这个 offset 是错的，脚本会按元数据来（这是设计选择）。这种情况建议先用 `exiftool` 修正元数据，或者告诉我我可以加一个 `--force-tz` 覆盖模式。
 
 ### 支持的扩展名
 
