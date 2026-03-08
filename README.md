@@ -1,6 +1,6 @@
 # Timezone-Aware Origin-Time Renamer
 
-Language: English | [中文](README_CN.md)
+Language: English | [Italiano](README_IT.md) | [Español](README_ES.md) | [中文](README_CN.md)
 
 This repo provides a terminal-friendly renaming tool that prefixes each photo/video with its origin capture timestamp (`YYYYMMDD_HHMMSS_...`) using metadata from `exiftool`. It is safe to re-run (only renames new/unprocessed files), resolves filename collisions automatically, supports mixed media formats (HEIC/JPG/DNG/MOV/MP4), and handles timezone correctly by preferring embedded offsets and falling back to a run-specific timezone when metadata is missing (common in exported/edited videos).
 

@@ -1,6 +1,6 @@
 # Timezone-Aware Origin-Time Renamer
 
-语言： [English](README.md) | 中文
+语言： [English](README.md) | [Italiano](README_IT.md) | [Español](README_ES.md) | 中文
 
 脚本：`scripts/rename_by_origin_time.py`
 
