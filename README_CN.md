@@ -2,6 +2,8 @@
 
 语言： [English](README.md) | [Italiano](README_IT.md) | [Español](README_ES.md) | 中文
 
+本仓库提供一个适合在终端使用的重命名工具：它会读取 `exiftool` 提取的元数据，把每个照片/视频的“原始拍摄/创建时间”作为前缀写入文件名（`YYYYMMDD_HHMMSS_...`）。工具可安全重复运行（只会处理新增或未处理的文件），自动处理同名冲突，支持混合格式（HEIC/JPG/DNG/MOV/MP4），并且在时区处理上优先使用文件内嵌的 offset；当元数据缺少时区信息时（常见于导出/编辑后的视频），会使用你在命令中指定的时区进行转换。
+
 脚本：`scripts/rename_by_origin_time.py`
 
 把照片/视频重命名为：
