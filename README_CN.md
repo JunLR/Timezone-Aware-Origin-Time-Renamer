@@ -38,12 +38,6 @@ origin-time-renamer --help
 uv tool install --editable .
 ```
 
-如果你之前用 `pip install -e .` 安装过，建议先卸载以避免 PATH/命令冲突：
-
-```bash
-python3 -m pip uninstall origin-time-renamer
-```
-
 安装 exiftool（Homebrew）：
 
 ```bash

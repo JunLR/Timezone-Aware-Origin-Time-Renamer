@@ -38,12 +38,6 @@ Developer workflow (editable install):
 uv tool install --editable .
 ```
 
-If you previously installed via `pip install -e .`, uninstall first to avoid PATH confusion:
-
-```bash
-python3 -m pip uninstall origin-time-renamer
-```
-
 Install exiftool (Homebrew):
 
 ```bash

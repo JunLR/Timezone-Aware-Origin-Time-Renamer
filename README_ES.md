@@ -38,12 +38,6 @@ Flujo para desarrolladores (instalación editable):
 uv tool install --editable .
 ```
 
-Si antes instalaste con `pip install -e .`, desinstala primero para evitar confusión en el PATH:
-
-```bash
-python3 -m pip uninstall origin-time-renamer
-```
-
 Instala exiftool (Homebrew):
 
 ```bash
@@ -150,4 +144,3 @@ origin-time-renamer undo --apply --log ./rename_log_YYYYMMDD_HHMMSS.jsonl
 - `0`: éxito
 - `2`: `exiftool` faltante/no disponible
 - `3`: fallos parciales (p. ej. errores de rename, error en tiempo de ejecución de exiftool)
-
