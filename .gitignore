@@ -1,0 +1,11 @@
+.DS_Store
+
+# Test/staging
+_rename_test/
+europetest/
+
+# Photo directories (e.g. 202602_RivieraSwizerland_...)
+20[0-9][0-9][0-9][0-9]_*/
+
+# Python
+__pycache__/
