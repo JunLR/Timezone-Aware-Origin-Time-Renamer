@@ -51,12 +51,12 @@ Set fallback timezone (default is `Asia/Hong_Kong`):
 python3 scripts/rename_by_origin_time.py --default-tz Asia/Hong_Kong /path/to/media
 ```
 
-Use per-directory timezone map for mixed trips:
+Specify timezone for this run (useful for a new trip folder):
 
 ```bash
 python3 scripts/rename_by_origin_time.py \
-  --tz-map "_rename_test/europe=Europe/Paris,_rename_test/hk=Asia/Hong_Kong" \
-  --apply _rename_test
+  --default-tz Europe/Paris \
+  --apply /path/to/media
 ```
 
 ### Time Resolution Order
@@ -71,13 +71,15 @@ Timezone selection:
 
 1. Offset embedded in datetime value
 2. `OffsetTimeOriginal` / `OffsetTime`
-3. `--tz-map` path-prefix match (longest prefix)
-4. `--default-tz` (default: `Asia/Hong_Kong`)
+3. For video files without offset: assume UTC, then convert
+4. `--tz-map` path-prefix match (longest prefix)
+5. `--default-tz` (default: `Asia/Hong_Kong`)
 
 ### Idempotency and Safety
 
 - If current name already starts with computed `YYYYMMDD_HHMMSS_`, it is skipped.
 - If current name already has a timestamp prefix but does not match computed timestamp, it is skipped with warning.
+- Re-running the same command on the same folder only affects newly added files that are not already named by this rule.
 - Name collisions in the same folder append `_2`, `_3`, ... before extension.
 - Hidden files and unsupported extensions are ignored.
 
@@ -140,12 +142,12 @@ python3 scripts/rename_by_origin_time.py --apply --report ./rename_report.csv /p
 python3 scripts/rename_by_origin_time.py --default-tz Asia/Hong_Kong /path/to/media
 ```
 
-混合旅行目录按子目录指定时区（最长前缀匹配）：
+每次运行统一指定时区（适合对某次旅行目录批量处理；目录里有新增文件时重复运行也只会处理新增未命名的）：
 
 ```bash
 python3 scripts/rename_by_origin_time.py \
-  --tz-map "_rename_test/europe=Europe/Paris,_rename_test/hk=Asia/Hong_Kong" \
-  --apply _rename_test
+  --default-tz Europe/Paris \
+  --apply /path/to/media
 ```
 
 ### 时间字段优先级
@@ -160,13 +162,15 @@ python3 scripts/rename_by_origin_time.py \
 
 1. 时间字段本身带 offset（例如 `+01:00` / `Z`）
 2. `OffsetTimeOriginal` / `OffsetTime`
-3. `--tz-map` 规则（路径前缀最长匹配）
-4. `--default-tz`（默认：`Asia/Hong_Kong`）
+3. 视频文件若缺少 offset：按 UTC 解析，再转换
+4. `--tz-map` 规则（路径前缀最长匹配）
+5. `--default-tz`（默认：`Asia/Hong_Kong`）
 
 ### 幂等性与安全策略
 
 - 如果文件名已经以计算得到的 `YYYYMMDD_HHMMSS_` 开头，则跳过。
 - 如果文件名已经有时间戳前缀但与计算结果不同，会警告并跳过（避免二次加前缀）。
+- 同一目录重复运行同一命令，只会影响新增且未按本规则命名的文件；已按规则命名的会被跳过。
 - 同目录下目标文件名冲突会自动加 `_2`、`_3` ……
 - 忽略隐藏文件和不支持的扩展名。
 

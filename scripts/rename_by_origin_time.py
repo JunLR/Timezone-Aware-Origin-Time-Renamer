@@ -44,6 +44,15 @@ SUPPORTED_EXTS = {
     ".3gp",
 }
 
+VIDEO_EXTS = {
+    ".mov",
+    ".mp4",
+    ".m4v",
+    ".avi",
+    ".mts",
+    ".3gp",
+}
+
 TIME_TAGS_PRIORITY = [
     "SubSecDateTimeOriginal",
     "DateTimeOriginal",
@@ -189,8 +198,6 @@ def read_metadata(files: Sequence[str]) -> Dict[str, Dict[str, object]]:
         "exiftool",
         "-j",
         "-m",
-        "-api",
-        "QuickTimeUTC=1",
         "-SubSecDateTimeOriginal",
         "-DateTimeOriginal",
         "-CreationDate",
@@ -357,6 +364,7 @@ def resolve_datetime(
 
     tz_source = ""
     tzinfo = inline_tz
+    used_offset_tag = False
 
     if tzinfo is not None:
         tz_source = f"inline_offset:{source_tag}"
@@ -371,8 +379,19 @@ def resolve_datetime(
             try:
                 tzinfo = parse_offset_string(offset_value)
                 tz_source = "offset_tag"
+                used_offset_tag = True
             except ValueError:
                 tzinfo = None
+
+    # Video metadata (QuickTime/MP4) often encodes times as UTC without an explicit offset.
+    # In that case, treat the base datetime as UTC and convert into the selected timezone.
+    ext = Path(abs_path).suffix.lower()
+    base_is_utc = (
+        ext in VIDEO_EXTS
+        and source_tag in ("CreationDate", "MediaCreateDate", "CreateDate")
+        and inline_tz is None
+        and not used_offset_tag
+    )
 
     if tzinfo is None:
         mapped_tz = choose_tz_from_map(abs_path, tz_map, cwd)
@@ -382,6 +401,10 @@ def resolve_datetime(
         else:
             tzinfo = ZoneInfo(default_tz)
             tz_source = f"default_tz:{default_tz}"
+
+    if base_is_utc:
+        aware_dt = base_dt.replace(tzinfo=timezone.utc).astimezone(tzinfo)
+        return aware_dt, f"utc_assumed;{tz_source}"
 
     aware_dt = base_dt.replace(tzinfo=tzinfo)
     return aware_dt, tz_source
